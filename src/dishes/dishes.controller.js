@@ -8,9 +8,11 @@ const nextId = require("../utils/nextId");
 
 // TODO: Implement the /dishes handlers needed to make the tests pass
 
-function dishValidator(req, res, next) {
+function dishIsValid(req, res, next) {
   const { data = {} } = req.body;
   const VALID_FIELDS = ["name", "price", "description", "image_url"];
+
+  //field validator
   for (const field of VALID_FIELDS) {
     if (!data[field]) {
       return next({
@@ -20,6 +22,7 @@ function dishValidator(req, res, next) {
     }
   }
 
+  //price validator
   if (typeof data.price !== "number" || data.price < 0) {
     return next({
       status: 400,
@@ -29,7 +32,7 @@ function dishValidator(req, res, next) {
   next();
 }
 
-function dishIdExists(req, res, next) {
+function dishExists(req, res, next) {
   const { dishId } = req.params;
   const foundDish = dishes.find((dish) => dish.id === dishId);
 
@@ -50,7 +53,16 @@ function list(req, res, next) {
 }
 
 function create(req, res, next) {
-  const { data: { name, description, price, image_url } = {} } = req.body;
+  const { dishId } = req.params;
+  const { data = {} } = req.body;
+  const { id, name, description, price, image_url } = data;
+
+  if (id && id !== dishId) {
+    return next({
+      status: 400,
+      message: `Data id field ${id}`,
+    });
+  }
 
   const newDish = {
     id: nextId(),
@@ -64,7 +76,8 @@ function create(req, res, next) {
 }
 
 function read(req, res) {
-  res.json({ data: res.locals.foundDish });
+  const foundDish = res.locals.dish
+  res.json({ data: foundDish });
 }
 
 function update(req, res) {
@@ -95,7 +108,7 @@ function update(req, res) {
 
 module.exports = {
   list,
-  create,
-  read,
-  update: dishValidator,
+  create: [dishIsValid, create],
+  read: [dishExists, read],
+  update: [dishExists, dishIsValid, update],
 };
