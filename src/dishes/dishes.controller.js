@@ -80,7 +80,7 @@ function read(req, res) {
   res.json({ data: foundDish });
 }
 
-function update(req, res) {
+function update(req, res, next) {
   const { dishId } = req.params;
   const { data = {} } = req.body;
   const { id, name, description, price, image_url } = data;
