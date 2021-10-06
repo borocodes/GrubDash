@@ -6,7 +6,7 @@ const dishes = require(path.resolve("src/data/dishes-data"));
 // Use this function to assign ID's when necessary
 const nextId = require("../utils/nextId");
 
-// TODO: Implement the /dishes handlers needed to make the tests pass
+//Middleware
 
 function dishIsValid(req, res, next) {
   const { data = {} } = req.body;
@@ -46,6 +46,7 @@ function dishExists(req, res, next) {
   });
 }
 
+//CRUD + list. NOTE: dishes cannot be deleted, so there is no destroy handler
 function list(req, res, next) {
   res.json({
     data: dishes,
@@ -76,7 +77,7 @@ function create(req, res, next) {
 }
 
 function read(req, res) {
-  const foundDish = res.locals.dish
+  const foundDish = res.locals.dish;
   res.json({ data: foundDish });
 }
 

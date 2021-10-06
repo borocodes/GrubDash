@@ -12,11 +12,7 @@ function statusIsValid(req, res, next) {
   const { data } = req.body;
   const { id, status } = data;
 
-  if (
-    !status ||
-    status === "" ||
-    status !== "pending"
-  ) {
+  if (!status || status === "" || status !== "pending") {
     return next({
       status: 400,
       message: `Order must have a status of pending, preparing, out-for-delivery, delivered`,
@@ -30,6 +26,7 @@ function statusIsValid(req, res, next) {
   next();
 }
 
+//Validate order ID when updating order
 function updateOrderIdIsValid(req, res, next) {
   const { orderId } = req.params;
   const { data } = req.body;
@@ -48,7 +45,7 @@ function orderHasValidFields(req, res, next) {
   const { deliverTo, mobileNumber, dishes } = data;
   const VALID_FIELDS = ["deliverTo", "mobileNumber", "dishes"];
 
-  //Are all required fields present
+  //Are all required order fields present
   for (const field of VALID_FIELDS) {
     if (!data[field]) {
       return next({
@@ -57,7 +54,7 @@ function orderHasValidFields(req, res, next) {
       });
     }
   }
-  //If dish fields are not valid
+  //If dish fields are not valid (dishes is an array nested inside orders)
   if (
     deliverTo === "" ||
     mobileNumber === "" ||
@@ -101,7 +98,20 @@ function orderExists(req, res, next) {
   });
 }
 
-//CRUD + list
+//Handler to ensure order is pending before deletion
+const checkDeleteStatus = (req, res, next) => {
+  const { status } = res.locals.order;
+  if (status !== "pending") {
+    return next({
+      status: 400,
+      message: `status should be pending`,
+    });
+  }
+
+  return next();
+};
+
+//CRUD handlers + list
 
 function list(req, res, next) {
   res.json({
@@ -128,27 +138,18 @@ function update(req, res, nect) {
   const { data: update } = req.body;
   for (let prop in update) {
     if (update[prop]) {
-      order[prop] = update[prop]
+      order[prop] = update[prop];
     }
   }
-  res.json({ data: order })
+  res.json({ data: order });
 }
 
-function destroy(req, res, next) {
-  const { orderId } = res.params
-  const { status } = req.locals.order
+function destroy(req, res) {
+  const { orderId } = req.params;
+  const index = orders.findIndex((order) => order.id === orderId);
+  const deletedOrder = orders.splice(index, 1);
 
-  if (status === "pending") {
-    const index = orders.findIndex((order) => order.id === orderId);
-
-    orders.splice(index, 1);
-    res.sendStatus(204);
-  } else {
-    next({
-      status: 400,
-      message: `An order cannot be deleted unless it is pending`
-    })
-  }
+  res.sendStatus(204);
 }
 
 module.exports = {
@@ -162,5 +163,5 @@ module.exports = {
     statusIsValid,
     update,
   ],
-  delete: [orderExists, destroy],
+  delete: [orderExists, checkDeleteStatus, destroy],
 };
